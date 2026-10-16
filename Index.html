@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DriveStream - Media Gallery</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #090d16;
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4f46e5;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .media-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .media-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(99, 102, 241, 0.25);
+        }
+        #lightboxImage {
+            transition: transform 0.25s ease-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
+
+    <!-- TOP NAVIGATION BAR -->
+    <header class="sticky top-0 z-30 glass-panel border-b border-slate-800/80">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3">
+            <!-- Brand Logo & Title -->
+            <div class="flex items-center gap-3 cursor-pointer" onclick="resetFilters()">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-purple-500 flex items-center justify-center shadow-lg shadow-brand-500/30">
+                    <i class="fa-brands fa-google-drive text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 id="galleryTitle" class="text-lg sm:text-xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">
+                        Drive Gallery
+                    </h1>
+                </div>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="order-3 md:order-2 w-full md:w-80 lg:w-96 relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                <input 
+                    id="searchInput" 
+                    type="text" 
+                    placeholder="Search videos or photos..." 
+                    class="w-full pl-10 pr-9 py-2 rounded-xl bg-slate-900/90 border border-slate-700/70 text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition"
+                >
+                <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-circle-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Reload Button Only -->
+            <div class="order-2 md:order-3 flex items-center gap-2">
+                <button 
+                    onclick="refreshGallery()" 
+                    title="Reload Media"
+                    class="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition"
+                >
+                    <i id="refreshIcon" class="fa-solid fa-arrows-rotate"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        
+        <!-- Filter & Layout Bar -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800/80">
+            <!-- Filter Tabs -->
+            <div class="flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800 self-start sm:self-auto overflow-x-auto max-w-full">
+                <button onclick="setFilter('all')" id="tab-all" class="filter-tab px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-2 bg-brand-600 text-white shadow">
+                    <i class="fa-solid fa-border-all"></i>
+                    <span>All</span>
+                    <span id="count-all" class="px-1.5 py-0.5 text-[11px] rounded-md bg-black/30">0</span>
+                </button>
+                <button onclick="setFilter('video')" id="tab-video" class="filter-tab px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-2 text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-circle-play"></i>
+                    <span>Videos</span>
+                    <span id="count-video" class="px-1.5 py-0.5 text-[11px] rounded-md bg-slate-800">0</span>
+                </button>
+                <button onclick="setFilter('image')" id="tab-image" class="filter-tab px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-2 text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-image"></i>
+                    <span>Photos</span>
+                    <span id="count-image" class="px-1.5 py-0.5 text-[11px] rounded-md bg-slate-800">0</span>
+                </button>
+                <button onclick="setFilter('embed')" id="tab-embed" class="filter-tab px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-2 text-slate-400 hover:text-white">
+                    <i class="fa-brands fa-google-drive"></i>
+                    <span>Folder View</span>
+                </button>
+            </div>
+
+            <!-- Grid / List Layout Toggle -->
+            <div class="flex items-center justify-end gap-3">
+                <div class="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-800">
+                    <button onclick="setLayout('grid')" id="layout-grid" class="p-2 rounded-lg text-xs bg-slate-800 text-white transition" title="Grid View">
+                        <i class="fa-solid fa-grip"></i>
+                    </button>
+                    <button onclick="setLayout('list')" id="layout-list" class="p-2 rounded-lg text-xs text-slate-400 hover:text-white transition" title="List View">
+                        <i class="fa-solid fa-list"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Skeleton -->
+        <div id="loadingState" class="hidden py-16 text-center">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-brand-500/10 border border-brand-500/20 text-brand-400 mb-4">
+                <i class="fa-solid fa-circle-notch fa-spin text-2xl"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-white">Loading Google Drive Media...</h3>
+        </div>
+
+        <!-- GALLERY GRID / LIST CONTAINER -->
+        <div id="galleryContainer" class="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5"></div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden py-16 text-center max-w-md mx-auto">
+            <div class="w-16 h-16 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center mx-auto mb-4 text-slate-400">
+                <i class="fa-regular fa-folder-open text-2xl"></i>
+            </div>
+            <h3 class="text-lg font-bold text-white">No Media Found</h3>
+            <p class="text-sm text-slate-400 mt-1 mb-5">Is filter mein koi photo ya video nahi mili.</p>
+        </div>
+
+        <!-- DIRECT GOOGLE DRIVE EMBED VIEW -->
+        <div id="directEmbedContainer" class="hidden mt-6">
+            <div class="w-full h-[650px] rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 shadow-2xl">
+                <iframe id="folderEmbedIframe" src="about:blank" class="w-full h-full border-0" allowfullscreen></iframe>
+            </div>
+        </div>
+    </main>
+
+    <!-- FULLSCREEN CINEMA LIGHTBOX & MEDIA PLAYER MODAL -->
+    <div id="lightboxModal" class="fixed inset-0 z-50 hidden bg-black/95 backdrop-blur-xl flex flex-col justify-between select-none">
+        
+        <!-- Lightbox Top Bar -->
+        <div class="flex items-center justify-between px-4 sm:px-6 py-3.5 bg-gradient-to-b from-black/80 to-transparent z-20">
+            <div class="flex items-center gap-3 min-w-0 pr-4">
+                <span id="lightboxTypeIcon" class="w-8 h-8 rounded-lg bg-brand-600/30 border border-brand-500/40 flex items-center justify-center text-brand-300 shrink-0">
+                    <i class="fa-solid fa-play text-xs"></i>
+                </span>
+                <div class="min-w-0">
+                    <h4 id="lightboxTitle" class="text-sm sm:text-base font-semibold text-white truncate">Media Title</h4>
+                    <p id="lightboxCounter" class="text-xs text-slate-400">1 of 1</p>
+                </div>
+            </div>
+
+            <!-- Player Controls & Mode Switcher -->
+            <div class="flex items-center gap-2">
+                <!-- Video Engine Switcher -->
+                <div id="videoEngineToggleWrap" class="hidden sm:flex items-center bg-slate-900/90 border border-slate-700/80 rounded-xl p-1 mr-2">
+                    <button onclick="switchVideoEngine('drive')" id="engine-drive" class="px-2.5 py-1 rounded-lg text-xs font-medium transition bg-brand-600 text-white">
+                        Drive Player
+                    </button>
+                    <button onclick="switchVideoEngine('html5')" id="engine-html5" class="px-2.5 py-1 rounded-lg text-xs font-medium transition text-slate-300 hover:text-white">
+                        Direct Player
+                    </button>
+                </div>
+
+                <!-- Photo Zoom Controls -->
+                <div id="photoZoomControls" class="hidden flex items-center gap-1 bg-slate-900/90 border border-slate-700/80 rounded-xl p-1 mr-1">
+                    <button onclick="zoomPhoto(-0.25)" class="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition" title="Zoom Out">
+                        <i class="fa-solid fa-magnifying-glass-minus text-xs"></i>
+                    </button>
+                    <button onclick="resetZoom()" class="px-2 py-1 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800 transition" id="zoomLevelText">
+                        100%
+                    </button>
+                    <button onclick="zoomPhoto(0.25)" class="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition" title="Zoom In">
+                        <i class="fa-solid fa-magnifying-glass-plus text-xs"></i>
+                    </button>
+                </div>
+
+                <!-- Fullscreen Button -->
+                <button onclick="toggleFullScreen()" class="p-2.5 rounded-xl bg-slate-900/90 hover:bg-brand-600 text-slate-200 hover:text-white border border-slate-700/80 transition" title="Full Screen">
+                    <i id="fullscreenIcon" class="fa-solid fa-expand text-sm"></i>
+                </button>
+
+                <!-- Close Lightbox -->
+                <button onclick="closeLightbox()" class="p-2.5 rounded-xl bg-red-500/20 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/30 transition ml-1" title="Close">
+                    <i class="fa-solid fa-xmark text-base"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Center Stage: Video or Photo -->
+        <div id="lightboxStage" class="relative flex-1 flex items-center justify-center w-full h-full overflow-hidden px-2 sm:px-14 py-2">
+            
+            <!-- Previous Button -->
+            <button onclick="navigateLightbox(-1)" class="absolute left-3 sm:left-5 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-900/80 hover:bg-brand-600 text-white border border-slate-700 flex items-center justify-center shadow-xl transition active:scale-90">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+
+            <!-- Media Content Wrapper -->
+            <div id="mediaStageWrapper" class="w-full h-full flex items-center justify-center max-w-6xl mx-auto">
+                
+                <!-- 1. Image Viewer -->
+                <img id="lightboxImage" src="" alt="Preview" class="hidden max-h-[82vh] max-w-full object-contain rounded-lg shadow-2xl select-none" />
+
+                <!-- 2. HTML5 Video Player -->
+                <video id="lightboxVideo" controls playsinline controlsList="nodownload" class="hidden max-h-[82vh] w-full max-w-5xl rounded-2xl bg-black shadow-2xl border border-slate-800">
+                    Your browser does not support HTML5 video.
+                </video>
+
+                <!-- 3. Google Drive Native Iframe Video Player -->
+                <div id="lightboxDriveIframeWrap" class="hidden w-full max-w-5xl aspect-video rounded-2xl overflow-hidden bg-black shadow-2xl border border-slate-800">
+                    <iframe id="lightboxDriveIframe" src="about:blank" class="w-full h-full border-0" allow="autoplay; fullscreen" allowfullscreen></iframe>
+                </div>
+
+            </div>
+
+            <!-- Next Button -->
+            <button onclick="navigateLightbox(1)" class="absolute right-3 sm:right-5 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-900/80 hover:bg-brand-600 text-white border border-slate-700 flex items-center justify-center shadow-xl transition active:scale-90">
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+        </div>
+
+        <!-- Lightbox Bottom Bar (Mobile Player Switch) -->
+        <div class="px-4 py-3 bg-gradient-to-t from-black/90 to-transparent z-20 flex flex-col items-center gap-2">
+            <div id="mobileVideoSwitch" class="flex sm:hidden items-center gap-2 text-xs">
+                <span class="text-slate-400">Player:</span>
+                <button onclick="switchVideoEngine('drive')" id="mob-engine-drive" class="px-2.5 py-1 rounded-lg bg-brand-600 text-white font-medium">Drive Player</button>
+                <button onclick="switchVideoEngine('html5')" id="mob-engine-html5" class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-medium">Direct</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- MAIN JAVASCRIPT & HARDCODED GOOGLE DRIVE CONFIGURATION                -->
+    <!-- ===================================================================== -->
+    <script>
+        /* ============================================================================
+         * ★ YAHAN CODE MEIN APNA GOOGLE DRIVE LINK DALEIN ★
+         * ============================================================================ */
+        const DRIVE_CONFIG = {
+            // 1. 👇 YAHAN APNA GOOGLE DRIVE FOLDER LINK PASTE KAREIN 👇
+            FOLDER_LINK_OR_ID: "https://drive.google.com/drive/folders/1iqasTlVLfEJV21mbeW-Lm_Lvu95khUxW?usp=sharing", 
+
+            // 2. 👇 AGAR CUSTOM PHOTO/VIDEO CARDS AUTOMATIC CHAHIYE TOH API KEY DALEIN 👇
+            // (Agar API Key khali chhodenge toh sidha Google Drive Folder View open ho jayega)
+            GOOGLE_API_KEY: "",
+
+            // 3. 👇 WEBSITE KA NAAM 👇
+            GALLERY_NAME: "My Drive Gallery",
+
+            // 4. 👇 OPTIONAL: AGAR BINA API KEY KE SPECIFIC DRIVE FILES KE CARDS DIKHANE HAIN 👇
+            MANUAL_DRIVE_FILES: [
+                {
+                    title: "Part-1",
+                    driveLink: "https://drive.google.com/file/d/1pEkGMcCbkslGltJW2l7VtoH6D0Cog460/view?usp=sharing",
+                    type: "video" // "video" ya "image"
+                },
+                {
+                    title: "Part-1",
+                    driveLink: "https://drive.google.com/file/d/123HaXruMuS6rKDTqZbTeTzOlGeptdMO6/view?usp=sharing",
+                    type: "video" // "video" ya "image"
+                },
+                {
+                    title: "Part-3",
+                    driveLink: "https://drive.google.com/file/d/1WvCkIcj-Ibn65yUsXyIKoQvhYHkw9p2H/view?usp=drive_link",
+                    type: "video" // "video" ya "image"
+                },
+                {
+                    title: "Part-4",
+                    driveLink: "https://drive.google.com/file/d/1tlfKMZ5ROwhiwt5OKyW-GER5uGXFm1VL/view?usp=drive_link",
+                    type: "video" // "video" ya "image"
+                }
+            ]
+        };
+
+        // Application State
+        let allMediaItems = [];
+        let filteredMediaItems = [];
+        let activeFilter = 'all';
+        let activeLayout = 'grid';
+        let searchQuery = '';
+        let currentLightboxIndex = 0;
+        let currentVideoEngine = 'drive';
+        let currentPhotoZoom = 1;
+
+        // Extract ID from Google Drive Link
+        function extractDriveId(input) {
+            if (!input || input === "PASTE_YOUR_GOOGLE_DRIVE_FOLDER_LINK_HERE") return "";
+            const trimmed = input.trim();
+            const folderMatch = trimmed.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+            if (folderMatch && folderMatch[1]) return folderMatch[1];
+
+            const fileMatch = trimmed.match(/\/d\/([a-zA-Z0-9_-]+)/);
+            if (fileMatch && fileMatch[1]) return fileMatch[1];
+
+            const paramMatch = trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+            if (paramMatch && paramMatch[1]) return paramMatch[1];
+
+            if (/^[a-zA-Z0-9_-]{15,}$/.test(trimmed)) return trimmed;
+            return "";
+        }
+
+        function formatBytes(bytes) {
+            if (!bytes || isNaN(bytes)) return "Drive Media";
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
+        function buildDriveMediaObject(fileId, name, type, sizeBytes, existingThumb) {
+            const isVideo = type === 'video' || (type && type.startsWith('video/'));
+            return {
+                id: fileId,
+                name: name || `Drive_${fileId}`,
+                type: isVideo ? 'video' : 'image',
+                size: typeof sizeBytes === 'number' || !isNaN(Number(sizeBytes)) ? formatBytes(Number(sizeBytes)) : (sizeBytes || 'Google Drive'),
+                thumbnail: existingThumb || `https://drive.google.com/thumbnail?id=${fileId}&sz=w800`,
+                fullImageUrl: `https://drive.google.com/thumbnail?id=${fileId}&sz=w2000`,
+                streamUrl: `https://drive.google.com/uc?export=download&id=${fileId}`,
+                drivePreviewUrl: `https://drive.google.com/file/d/${fileId}/preview`
+            };
+        }
+
+        function getManualDriveItems() {
+            const list = [];
+            if (Array.isArray(DRIVE_CONFIG.MANUAL_DRIVE_FILES)) {
+                DRIVE_CONFIG.MANUAL_DRIVE_FILES.forEach(item => {
+                    const id = extractDriveId(item.driveLink || item.id);
+                    if (id) {
+                        list.push(buildDriveMediaObject(id, item.title || "Drive Media", item.type || "video", "Google Drive"));
+                    }
+                });
+            }
+            return list;
+        }
+
+        async function fetchGoogleDriveFolderFiles(folderId, apiKey) {
+            const query = encodeURIComponent(`'${folderId}' in parents and trashed = false and (mimeType contains 'image/' or mimeType contains 'video/')`);
+            const fields = encodeURIComponent("files(id,name,mimeType,size,thumbnailLink)");
+            const url = `https://www.googleapis.com/drive/v3/files?q=${query}&fields=${fields}&pageSize=100&orderBy=createdTime desc&key=${apiKey}`;
+
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
+            const data = await response.json();
+            return (data.files || []).map(f => {
+                const highResThumb = f.thumbnailLink ? f.thumbnailLink.replace(/=s\d+/, '=s800') : null;
+                return buildDriveMediaObject(f.id, f.name, f.mimeType, f.size, highResThumb);
+            });
+        }
+
+        async function initGallery() {
+            document.getElementById('galleryTitle').textContent = DRIVE_CONFIG.GALLERY_NAME || "Drive Gallery";
+            const folderId = extractDriveId(DRIVE_CONFIG.FOLDER_LINK_OR_ID);
+            const apiKey = (DRIVE_CONFIG.GOOGLE_API_KEY || "").trim();
+            const manualItems = getManualDriveItems();
+            const loadingEl = document.getElementById('loadingState');
+
+            allMediaItems = [];
+
+            // Set Direct Folder Embed Iframe
+            if (folderId) {
+                document.getElementById('folderEmbedIframe').src = `https://drive.google.com/embeddedfolderview?id=${folderId}#grid`;
+            }
+
+            // 1. Folder + API Key -> Load Custom Cards
+            if (folderId && apiKey) {
+                loadingEl.classList.remove('hidden');
+                try {
+                    const driveFiles = await fetchGoogleDriveFolderFiles(folderId, apiKey);
+                    allMediaItems = [...driveFiles, ...manualItems];
+                } catch (err) {
+                    console.error("Drive API Error:", err);
+                    allMediaItems = [...manualItems];
+                    if (allMediaItems.length === 0) setFilter('embed');
+                } finally {
+                    loadingEl.classList.add('hidden');
+                }
+            } 
+            // 2. Manual Files Provided
+            else if (manualItems.length > 0) {
+                allMediaItems = [...manualItems];
+            } 
+            // 3. Only Folder Link Provided (No API Key) -> Directly show Embedded Folder View
+            else if (folderId) {
+                updateCounts();
+                setFilter('embed');
+                return;
+            }
+
+            updateCounts();
+            applyFiltersAndRender();
+        }
+
+        function updateCounts() {
+            document.getElementById('count-all').textContent = allMediaItems.length;
+            document.getElementById('count-video').textContent = allMediaItems.filter(i => i.type === 'video').length;
+            document.getElementById('count-image').textContent = allMediaItems.filter(i => i.type === 'image').length;
+        }
+
+        function applyFiltersAndRender() {
+            const galleryEl = document.getElementById('galleryContainer');
+            const emptyEl = document.getElementById('emptyState');
+            const embedContainer = document.getElementById('directEmbedContainer');
+
+            if (activeFilter === 'embed') {
+                galleryEl.classList.add('hidden');
+                emptyEl.classList.add('hidden');
+                embedContainer.classList.remove('hidden');
+                return;
+            } else {
+                embedContainer.classList.add('hidden');
+            }
+
+            filteredMediaItems = allMediaItems.filter(item => {
+                const matchesType = activeFilter === 'all' || item.type === activeFilter;
+                const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+                return matchesType && matchesSearch;
+            });
+
+            if (filteredMediaItems.length === 0) {
+                galleryEl.classList.add('hidden');
+                emptyEl.classList.remove('hidden');
+                return;
+            }
+
+            emptyEl.classList.add('hidden');
+            galleryEl.classList.remove('hidden');
+
+            galleryEl.className = activeLayout === 'grid'
+                ? "mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5"
+                : "mt-6 flex flex-col gap-3";
+
+            galleryEl.innerHTML = filteredMediaItems.map((item, idx) => {
+                const isVideo = item.type === 'video';
+                const badgeBg = isVideo ? 'bg-rose-600/90 text-white' : 'bg-emerald-600/90 text-white';
+                const badgeIcon = isVideo ? 'fa-play' : 'fa-image';
+                const badgeLabel = isVideo ? 'VIDEO' : 'PHOTO';
+                const fallbackThumb = `https://placehold.co/600x400/1e293b/e2e8f0?text=${encodeURIComponent(item.name)}`;
+
+                if (activeLayout === 'grid') {
+                    return `
+                    <div onclick="openLightbox(${idx})" class="media-card group cursor-pointer rounded-2xl overflow-hidden bg-slate-900/90 border border-slate-800/90 flex flex-col">
+                        <div class="relative aspect-video w-full overflow-hidden bg-slate-950">
+                            <img 
+                                src="${item.thumbnail}" 
+                                alt="${item.name}" 
+                                loading="lazy"
+                                onerror="this.onerror=null;this.src='${fallbackThumb}';"
+                                class="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                            />
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80 group-hover:opacity-95 transition"></div>
+                            
+                            <span class="absolute top-3 left-3 px-2.5 py-1 rounded-lg text-[10px] font-bold tracking-wider uppercase flex items-center gap-1.5 backdrop-blur-md ${badgeBg}">
+                                <i class="fa-solid ${badgeIcon} text-[9px]"></i>
+                                ${badgeLabel}
+                            </span>
+
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <div class="w-12 h-12 rounded-full bg-brand-600/90 group-hover:bg-brand-500 text-white flex items-center justify-center shadow-xl shadow-brand-600/40 transform scale-90 group-hover:scale-110 transition">
+                                    <i class="fa-solid ${isVideo ? 'fa-play ml-0.5' : 'fa-expand'} text-base"></i>
+                                </div>
+                            </div>
+
+                            <div class="absolute bottom-2.5 left-3 right-3 flex items-center justify-between text-[11px] text-slate-300">
+                                <span class="px-2 py-0.5 rounded bg-black/60 backdrop-blur-sm">${item.size}</span>
+                                <span class="px-2 py-0.5 rounded bg-black/60 backdrop-blur-sm flex items-center gap-1">
+                                    <i class="fa-solid fa-expand text-[10px]"></i> Fullscreen
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="p-3.5 flex items-center justify-between gap-2">
+                            <h3 class="text-sm font-semibold text-slate-100 group-hover:text-brand-400 transition truncate" title="${item.name}">
+                                ${item.name}
+                            </h3>
+                        </div>
+                    </div>`;
+                } else {
+                    return `
+                    <div onclick="openLightbox(${idx})" class="media-card group cursor-pointer rounded-2xl p-3 bg-slate-900/90 border border-slate-800/90 flex items-center justify-between gap-4">
+                        <div class="flex items-center gap-4 min-w-0">
+                            <div class="relative w-28 sm:w-36 aspect-video rounded-xl overflow-hidden bg-slate-950 shrink-0">
+                                <img 
+                                    src="${item.thumbnail}" 
+                                    alt="${item.name}" 
+                                    onerror="this.onerror=null;this.src='${fallbackThumb}';"
+                                    class="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                                />
+                                <div class="absolute inset-0 bg-black/30 flex items-center justify-center">
+                                    <i class="fa-solid ${isVideo ? 'fa-circle-play' : 'fa-magnifying-glass-plus'} text-white text-xl drop-shadow"></i>
+                                </div>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${badgeBg}">${badgeLabel}</span>
+                                    <span class="text-xs text-slate-400">${item.size}</span>
+                                </div>
+                                <h3 class="text-sm sm:text-base font-semibold text-white group-hover:text-brand-400 transition truncate">${item.name}</h3>
+                            </div>
+                        </div>
+                        <div class="pr-2 shrink-0">
+                            <span class="w-10 h-10 rounded-xl bg-slate-800 group-hover:bg-brand-600 text-slate-300 group-hover:text-white flex items-center justify-center transition">
+                                <i class="fa-solid ${isVideo ? 'fa-play' : 'fa-expand'}"></i>
+                            </span>
+                        </div>
+                    </div>`;
+                }
+            }).join('');
+        }
+
+        function setFilter(filterName) {
+            activeFilter = filterName;
+            ['all', 'video', 'image', 'embed'].forEach(tab => {
+                const btn = document.getElementById(`tab-${tab}`);
+                btn.className = tab === filterName
+                    ? "filter-tab px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-2 bg-brand-600 text-white shadow"
+                    : "filter-tab px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-2 text-slate-400 hover:text-white";
+            });
+            applyFiltersAndRender();
+        }
+
+        function setLayout(layout) {
+            activeLayout = layout;
+            document.getElementById('layout-grid').className = layout === 'grid' ? "p-2 rounded-lg text-xs bg-slate-800 text-white transition" : "p-2 rounded-lg text-xs text-slate-400 hover:text-white transition";
+            document.getElementById('layout-list').className = layout === 'list' ? "p-2 rounded-lg text-xs bg-slate-800 text-white transition" : "p-2 rounded-lg text-xs text-slate-400 hover:text-white transition";
+            applyFiltersAndRender();
+        }
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            searchQuery = e.target.value;
+            document.getElementById('clearSearchBtn').classList.toggle('hidden', searchQuery.length === 0);
+            if (activeFilter === 'embed') setFilter('all');
+            applyFiltersAndRender();
+        });
+
+        function clearSearch() {
+            searchQuery = '';
+            document.getElementById('searchInput').value = '';
+            document.getElementById('clearSearchBtn').classList.add('hidden');
+            applyFiltersAndRender();
+        }
+
+        function resetFilters() {
+            clearSearch();
+            setFilter('all');
+        }
+
+        function refreshGallery() {
+            const icon = document.getElementById('refreshIcon');
+            icon.classList.add('fa-spin');
+            initGallery().finally(() => {
+                setTimeout(() => icon.classList.remove('fa-spin'), 500);
+            });
+        }
+
+        /* Lightbox Functions */
+        function openLightbox(index) {
+            if (!filteredMediaItems[index]) return;
+            currentLightboxIndex = index;
+            document.getElementById('lightboxModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            renderLightboxItem();
+        }
+
+        function renderLightboxItem() {
+            const item = filteredMediaItems[currentLightboxIndex];
+            if (!item) return;
+
+            const videoEl = document.getElementById('lightboxVideo');
+            const driveIframe = document.getElementById('lightboxDriveIframe');
+            const driveIframeWrap = document.getElementById('lightboxDriveIframeWrap');
+            const imgEl = document.getElementById('lightboxImage');
+
+            videoEl.pause();
+            videoEl.removeAttribute('src');
+            driveIframe.src = 'about:blank';
+
+            document.getElementById('lightboxTitle').textContent = item.name;
+            document.getElementById('lightboxCounter').textContent = `${currentLightboxIndex + 1} of ${filteredMediaItems.length}`;
+
+            const typeIcon = document.getElementById('lightboxTypeIcon');
+            const videoToggleWrap = document.getElementById('videoEngineToggleWrap');
+            const mobileVideoSwitch = document.getElementById('mobileVideoSwitch');
+            const photoZoomControls = document.getElementById('photoZoomControls');
+
+            resetZoom();
+
+            if (item.type === 'video') {
+                typeIcon.innerHTML = '<i class="fa-solid fa-play text-xs"></i>';
+                imgEl.classList.add('hidden');
+                photoZoomControls.classList.add('hidden');
+                videoToggleWrap.classList.remove('hidden');
+                videoToggleWrap.classList.add('sm:flex');
+                mobileVideoSwitch.classList.remove('hidden');
+                switchVideoEngine('drive');
+            } else {
+                typeIcon.innerHTML = '<i class="fa-solid fa-image text-xs"></i>';
+                videoEl.classList.add('hidden');
+                driveIframeWrap.classList.add('hidden');
+                videoToggleWrap.classList.add('hidden');
+                videoToggleWrap.classList.remove('sm:flex');
+                mobileVideoSwitch.classList.add('hidden');
+                photoZoomControls.classList.remove('hidden');
+
+                imgEl.classList.remove('hidden');
+                imgEl.src = item.fullImageUrl || item.thumbnail;
+                imgEl.onerror = function() { this.src = item.thumbnail; };
+            }
+        }
+
+        function switchVideoEngine(engine) {
+            currentVideoEngine = engine;
+            const item = filteredMediaItems[currentLightboxIndex];
+            if (!item || item.type !== 'video') return;
+
+            const videoEl = document.getElementById('lightboxVideo');
+            const driveIframe = document.getElementById('lightboxDriveIframe');
+            const driveIframeWrap = document.getElementById('lightboxDriveIframeWrap');
+
+            const btnHtml5 = document.getElementById('engine-html5');
+            const btnDrive = document.getElementById('engine-drive');
+            const mobHtml5 = document.getElementById('mob-engine-html5');
+            const mobDrive = document.getElementById('mob-engine-drive');
+
+            if (engine === 'drive') {
+                videoEl.pause();
+                videoEl.classList.add('hidden');
+                driveIframeWrap.classList.remove('hidden');
+                driveIframe.src = item.drivePreviewUrl;
+
+                btnDrive.className = "px-2.5 py-1 rounded-lg text-xs font-medium transition bg-brand-600 text-white";
+                btnHtml5.className = "px-2.5 py-1 rounded-lg text-xs font-medium transition text-slate-300 hover:text-white";
+                mobDrive.className = "px-2.5 py-1 rounded-lg bg-brand-600 text-white font-medium";
+                mobHtml5.className = "px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-medium";
+            } else {
+                driveIframe.src = 'about:blank';
+                driveIframeWrap.classList.add('hidden');
+                videoEl.classList.remove('hidden');
+                videoEl.src = item.streamUrl;
+                videoEl.play().catch(() => {});
+                videoEl.onerror = () => switchVideoEngine('drive');
+
+                btnHtml5.className = "px-2.5 py-1 rounded-lg text-xs font-medium transition bg-brand-600 text-white";
+                btnDrive.className = "px-2.5 py-1 rounded-lg text-xs font-medium transition text-slate-300 hover:text-white";
+                mobHtml5.className = "px-2.5 py-1 rounded-lg bg-brand-600 text-white font-medium";
+                mobDrive.className = "px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-medium";
+            }
+        }
+
+        function navigateLightbox(direction) {
+            if (filteredMediaItems.length === 0) return;
+            currentLightboxIndex = (currentLightboxIndex + direction + filteredMediaItems.length) % filteredMediaItems.length;
+            renderLightboxItem();
+        }
+
+        function closeLightbox() {
+            const modal = document.getElementById('lightboxModal');
+            const videoEl = document.getElementById('lightboxVideo');
+            const driveIframe = document.getElementById('lightboxDriveIframe');
+
+            videoEl.pause();
+            videoEl.removeAttribute('src');
+            driveIframe.src = 'about:blank';
+
+            if (document.fullscreenElement) {
+                document.exitFullscreen().catch(() => {});
+            }
+
+            modal.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        function zoomPhoto(delta) {
+            currentPhotoZoom = Math.min(3, Math.max(0.5, currentPhotoZoom + delta));
+            document.getElementById('lightboxImage').style.transform = `scale(${currentPhotoZoom})`;
+            document.getElementById('zoomLevelText').textContent = `${Math.round(currentPhotoZoom * 100)}%`;
+        }
+
+        function resetZoom() {
+            currentPhotoZoom = 1;
+            const imgEl = document.getElementById('lightboxImage');
+            if (imgEl) imgEl.style.transform = 'scale(1)';
+            const zoomText = document.getElementById('zoomLevelText');
+            if (zoomText) zoomText.textContent = '100%';
+        }
+
+        function toggleFullScreen() {
+            const item = filteredMediaItems[currentLightboxIndex];
+            const videoEl = document.getElementById('lightboxVideo');
+            const modalEl = document.getElementById('lightboxModal');
+
+            if (item && item.type === 'video' && currentVideoEngine === 'html5' && videoEl.webkitEnterFullscreen) {
+                videoEl.webkitEnterFullscreen();
+                return;
+            }
+
+            if (!document.fullscreenElement) {
+                modalEl.requestFullscreen().catch(() => {});
+            } else {
+                document.exitFullscreen().catch(() => {});
+            }
+        }
+
+        document.addEventListener('fullscreenchange', () => {
+            document.getElementById('fullscreenIcon').className = document.fullscreenElement ? 'fa-solid fa-compress text-sm' : 'fa-solid fa-expand text-sm';
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (document.getElementById('lightboxModal').classList.contains('hidden')) return;
+            if (e.key === 'Escape') closeLightbox();
+            if (e.key === 'ArrowRight') navigateLightbox(1);
+            if (e.key === 'ArrowLeft') navigateLightbox(-1);
+            if (e.key === 'f' || e.key === 'F') toggleFullScreen();
+        });
+
+        window.onload = initGallery;
+    </script>
+</body>
+</html>
