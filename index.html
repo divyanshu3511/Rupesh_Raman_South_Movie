@@ -2,7 +2,7 @@
 <html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Rupesh-Raman-South_Movie</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -68,6 +68,46 @@
         }
         #lightboxImage {
             transition: transform 0.25s ease-out;
+        }
+
+        /* Mobile & Fullscreen Drive Player Optimizations */
+        #lightboxModal {
+            height: 100vh;
+            height: 100dvh;
+        }
+        .drive-player-container {
+            position: relative;
+            width: 100%;
+            background: #000;
+            overflow: hidden;
+            /* On mobile portrait, give generous height so Drive controls & video look great */
+            height: 56vh;
+            max-height: 82dvh;
+        }
+        @media (min-width: 640px) {
+            .drive-player-container {
+                height: auto;
+                aspect-ratio: 16 / 9;
+            }
+        }
+        /* When phone is rotated to landscape on mobile */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .drive-player-container {
+                height: 84dvh !important;
+                max-width: 100% !important;
+                border-radius: 0 !important;
+                border: none !important;
+            }
+            #lightboxTopBar, #lightboxBottomBar {
+                padding-top: 4px !important;
+                padding-bottom: 4px !important;
+            }
+        }
+        /* Native fullscreen mode fills 100% screen */
+        #lightboxModal:fullscreen .drive-player-container,
+        #lightboxModal:-webkit-full-screen .drive-player-container {
+            height: 86dvh !important;
+            max-width: 96vw !important;
         }
     </style>
 </head>
@@ -178,7 +218,7 @@
 
         <!-- DIRECT GOOGLE DRIVE EMBED VIEW -->
         <div id="directEmbedContainer" class="hidden mt-6">
-            <div class="w-full h-[650px] rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 shadow-2xl">
+            <div class="w-full h-[70vh] sm:h-[650px] rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 shadow-2xl">
                 <iframe id="folderEmbedIframe" src="about:blank" class="w-full h-full border-0" allowfullscreen></iframe>
             </div>
         </div>
@@ -188,20 +228,20 @@
     <div id="lightboxModal" class="fixed inset-0 z-50 hidden bg-black/95 backdrop-blur-xl flex flex-col justify-between select-none">
         
         <!-- Lightbox Top Bar -->
-        <div class="flex items-center justify-between px-4 sm:px-6 py-3.5 bg-gradient-to-b from-black/80 to-transparent z-20">
-            <div class="flex items-center gap-3 min-w-0 pr-4">
+        <div id="lightboxTopBar" class="flex items-center justify-between px-3 sm:px-6 py-2.5 sm:py-3.5 bg-gradient-to-b from-black/90 to-transparent z-20 shrink-0">
+            <div class="flex items-center gap-2.5 sm:gap-3 min-w-0 pr-2">
                 <span id="lightboxTypeIcon" class="w-8 h-8 rounded-lg bg-brand-600/30 border border-brand-500/40 flex items-center justify-center text-brand-300 shrink-0">
                     <i class="fa-solid fa-play text-xs"></i>
                 </span>
                 <div class="min-w-0">
                     <h4 id="lightboxTitle" class="text-sm sm:text-base font-semibold text-white truncate">Media Title</h4>
-                    <p id="lightboxCounter" class="text-xs text-slate-400">1 of 1</p>
+                    <p id="lightboxCounter" class="text-[11px] sm:text-xs text-slate-400">1 of 1</p>
                 </div>
             </div>
 
             <!-- Player Controls & Mode Switcher -->
-            <div class="flex items-center gap-2">
-                <!-- Video Engine Switcher -->
+            <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                <!-- Video Engine Switcher (Desktop) -->
                 <div id="videoEngineToggleWrap" class="hidden sm:flex items-center bg-slate-900/90 border border-slate-700/80 rounded-xl p-1 mr-2">
                     <button onclick="switchVideoEngine('drive')" id="engine-drive" class="px-2.5 py-1 rounded-lg text-xs font-medium transition bg-brand-600 text-white">
                         Drive Player
@@ -230,17 +270,17 @@
                 </button>
 
                 <!-- Close Lightbox -->
-                <button onclick="closeLightbox()" class="p-2.5 rounded-xl bg-red-500/20 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/30 transition ml-1" title="Close">
+                <button onclick="closeLightbox()" class="p-2.5 rounded-xl bg-red-500/20 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/30 transition ml-0.5" title="Close">
                     <i class="fa-solid fa-xmark text-base"></i>
                 </button>
             </div>
         </div>
 
-        <!-- Center Stage: Video or Photo -->
-        <div id="lightboxStage" class="relative flex-1 flex items-center justify-center w-full h-full overflow-hidden px-2 sm:px-14 py-2">
+        <!-- Center Stage: Video or Photo (Zero side padding on mobile so video takes 100% width) -->
+        <div id="lightboxStage" class="relative flex-1 flex items-center justify-center w-full h-full overflow-hidden px-0 sm:px-14 py-1">
             
-            <!-- Previous Button -->
-            <button onclick="navigateLightbox(-1)" class="absolute left-3 sm:left-5 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-900/80 hover:bg-brand-600 text-white border border-slate-700 flex items-center justify-center shadow-xl transition active:scale-90">
+            <!-- Previous Button (Desktop Floating, Hidden on Mobile so it never blocks Drive Video Controls) -->
+            <button onclick="navigateLightbox(-1)" class="hidden sm:flex absolute left-5 z-20 w-12 h-12 rounded-full bg-slate-900/80 hover:bg-brand-600 text-white border border-slate-700 items-center justify-center shadow-xl transition active:scale-90">
                 <i class="fa-solid fa-chevron-left"></i>
             </button>
 
@@ -248,32 +288,60 @@
             <div id="mediaStageWrapper" class="w-full h-full flex items-center justify-center max-w-6xl mx-auto">
                 
                 <!-- 1. Image Viewer -->
-                <img id="lightboxImage" src="" alt="Preview" class="hidden max-h-[82vh] max-w-full object-contain rounded-lg shadow-2xl select-none" />
+                <img id="lightboxImage" src="" alt="Preview" class="hidden max-h-[80dvh] max-w-full object-contain sm:rounded-lg shadow-2xl select-none" />
 
                 <!-- 2. HTML5 Video Player -->
-                <video id="lightboxVideo" controls playsinline controlsList="nodownload" class="hidden max-h-[82vh] w-full max-w-5xl rounded-2xl bg-black shadow-2xl border border-slate-800">
+                <video id="lightboxVideo" controls playsinline webkit-playsinline controlsList="nodownload" class="hidden max-h-[78dvh] w-full max-w-5xl sm:rounded-2xl bg-black shadow-2xl border-y sm:border border-slate-800">
                     Your browser does not support HTML5 video.
                 </video>
 
-                <!-- 3. Google Drive Native Iframe Video Player -->
-                <div id="lightboxDriveIframeWrap" class="hidden w-full max-w-5xl aspect-video rounded-2xl overflow-hidden bg-black shadow-2xl border border-slate-800">
-                    <iframe id="lightboxDriveIframe" src="about:blank" class="w-full h-full border-0" allow="autoplay; fullscreen" allowfullscreen></iframe>
+                <!-- 3. Google Drive Native Iframe Video Player (Optimized for Mobile & Desktop) -->
+                <div id="lightboxDriveIframeWrap" class="hidden drive-player-container max-w-5xl sm:rounded-2xl shadow-2xl border-y sm:border border-slate-800">
+                    <!-- Shield to block Google Drive's top-right external pop-out button so mobile users stay inside website -->
+                    <div class="absolute top-0 right-0 w-16 h-14 z-10 bg-transparent" title="Protected View"></div>
+                    <iframe 
+                        id="lightboxDriveIframe" 
+                        src="about:blank" 
+                        class="w-full h-full border-0" 
+                        allow="autoplay; fullscreen; encrypted-media; picture-in-picture" 
+                        allowfullscreen
+                        webkitallowfullscreen
+                        mozallowfullscreen
+                    ></iframe>
                 </div>
 
             </div>
 
-            <!-- Next Button -->
-            <button onclick="navigateLightbox(1)" class="absolute right-3 sm:right-5 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-900/80 hover:bg-brand-600 text-white border border-slate-700 flex items-center justify-center shadow-xl transition active:scale-90">
+            <!-- Next Button (Desktop Floating, Hidden on Mobile so it never blocks Drive Video Controls) -->
+            <button onclick="navigateLightbox(1)" class="hidden sm:flex absolute right-5 z-20 w-12 h-12 rounded-full bg-slate-900/80 hover:bg-brand-600 text-white border border-slate-700 items-center justify-center shadow-xl transition active:scale-90">
                 <i class="fa-solid fa-chevron-right"></i>
             </button>
         </div>
 
-        <!-- Lightbox Bottom Bar (Mobile Player Switch) -->
-        <div class="px-4 py-3 bg-gradient-to-t from-black/90 to-transparent z-20 flex flex-col items-center gap-2">
-            <div id="mobileVideoSwitch" class="flex sm:hidden items-center gap-2 text-xs">
-                <span class="text-slate-400">Player:</span>
-                <button onclick="switchVideoEngine('drive')" id="mob-engine-drive" class="px-2.5 py-1 rounded-lg bg-brand-600 text-white font-medium">Drive Player</button>
-                <button onclick="switchVideoEngine('html5')" id="mob-engine-html5" class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-medium">Direct</button>
+        <!-- Lightbox Bottom Bar (Dedicated Mobile Navigation + Player Switcher) -->
+        <div id="lightboxBottomBar" class="px-3 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-t from-black/95 via-black/80 to-transparent z-20 shrink-0">
+            <div class="max-w-md mx-auto flex items-center justify-between gap-2">
+                <!-- Mobile Prev Button -->
+                <button onclick="navigateLightbox(-1)" class="sm:hidden flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900/90 active:bg-brand-600 text-slate-200 border border-slate-700/80 text-xs font-semibold">
+                    <i class="fa-solid fa-chevron-left text-[10px]"></i>
+                    <span>Prev</span>
+                </button>
+
+                <!-- Mobile Video Engine Switcher -->
+                <div id="mobileVideoSwitch" class="flex sm:hidden items-center bg-slate-900/90 border border-slate-700/80 rounded-xl p-1">
+                    <button onclick="switchVideoEngine('drive')" id="mob-engine-drive" class="px-3 py-1.5 rounded-lg bg-brand-600 text-white text-xs font-medium transition">
+                        Drive Player
+                    </button>
+                    <button onclick="switchVideoEngine('html5')" id="mob-engine-html5" class="px-3 py-1.5 rounded-lg text-slate-300 text-xs font-medium transition">
+                        Direct
+                    </button>
+                </div>
+
+                <!-- Mobile Next Button -->
+                <button onclick="navigateLightbox(1)" class="sm:hidden flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900/90 active:bg-brand-600 text-slate-200 border border-slate-700/80 text-xs font-semibold">
+                    <span>Next</span>
+                    <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                </button>
             </div>
         </div>
     </div>
@@ -310,11 +378,11 @@
                 },
                 {
                     title: "Part-3",
-                    driveLink: "https://drive.google.com/file/d/1WvCkIcj-Ibn65yUsXyIKoQvhYHkw9p2H/view?usp=drive_link",
+                    driveLink: "https://drive.google.com/file/d/1WvCkIcj-Ibn65yUsXyIKoQvhYHkw9p2H/view?usp=sharing",
                     type: "video" // "video" ya "image"
                 },
                 {
-                    title: "Part-4",
+                    title: "Trailler",
                     driveLink: "https://drive.google.com/file/d/1tlfKMZ5ROwhiwt5OKyW-GER5uGXFm1VL/view?usp=drive_link",
                     type: "video" // "video" ya "image"
                 }
@@ -680,8 +748,8 @@
 
                 btnDrive.className = "px-2.5 py-1 rounded-lg text-xs font-medium transition bg-brand-600 text-white";
                 btnHtml5.className = "px-2.5 py-1 rounded-lg text-xs font-medium transition text-slate-300 hover:text-white";
-                mobDrive.className = "px-2.5 py-1 rounded-lg bg-brand-600 text-white font-medium";
-                mobHtml5.className = "px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-medium";
+                mobDrive.className = "px-3 py-1.5 rounded-lg bg-brand-600 text-white text-xs font-medium transition";
+                mobHtml5.className = "px-3 py-1.5 rounded-lg text-slate-300 text-xs font-medium transition";
             } else {
                 driveIframe.src = 'about:blank';
                 driveIframeWrap.classList.add('hidden');
@@ -692,8 +760,8 @@
 
                 btnHtml5.className = "px-2.5 py-1 rounded-lg text-xs font-medium transition bg-brand-600 text-white";
                 btnDrive.className = "px-2.5 py-1 rounded-lg text-xs font-medium transition text-slate-300 hover:text-white";
-                mobHtml5.className = "px-2.5 py-1 rounded-lg bg-brand-600 text-white font-medium";
-                mobDrive.className = "px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-medium";
+                mobHtml5.className = "px-3 py-1.5 rounded-lg bg-brand-600 text-white text-xs font-medium transition";
+                mobDrive.className = "px-3 py-1.5 rounded-lg text-slate-300 text-xs font-medium transition";
             }
         }
 
@@ -715,6 +783,9 @@
             if (document.fullscreenElement) {
                 document.exitFullscreen().catch(() => {});
             }
+            if (screen.orientation && screen.orientation.unlock) {
+                try { screen.orientation.unlock(); } catch (e) {}
+            }
 
             modal.classList.add('hidden');
             document.body.style.overflow = '';
@@ -734,7 +805,7 @@
             if (zoomText) zoomText.textContent = '100%';
         }
 
-        function toggleFullScreen() {
+        async function toggleFullScreen() {
             const item = filteredMediaItems[currentLightboxIndex];
             const videoEl = document.getElementById('lightboxVideo');
             const modalEl = document.getElementById('lightboxModal');
@@ -745,7 +816,12 @@
             }
 
             if (!document.fullscreenElement) {
-                modalEl.requestFullscreen().catch(() => {});
+                try {
+                    await modalEl.requestFullscreen();
+                    if (item && item.type === 'video' && screen.orientation && screen.orientation.lock) {
+                        screen.orientation.lock('landscape').catch(() => {});
+                    }
+                } catch (e) {}
             } else {
                 document.exitFullscreen().catch(() => {});
             }
